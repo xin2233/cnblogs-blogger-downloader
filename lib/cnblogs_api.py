@@ -31,7 +31,7 @@ def get_posts_list(http_header, category_id=""):
     r = httpx.get(rf"https://i.cnblogs.com/api/posts/list?p=1&cid={category_id}&tid=&t=1&cfg=0&search=&orderBy=&scid=",
                   headers=http_header, timeout=TIMEOUT)
     result = r.json()
-    pmax = ceil(result["postsCount"] / 10)
+    pmax = ceil(result["postsCount"] / result["pageSize"]) #pageSize与Cook有关
     if pmax > 1:
         for page in range(2, pmax + 1):
             r = httpx.get(

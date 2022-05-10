@@ -167,3 +167,8 @@ sphinx-build.exe -b html .\sphinx\source\ docs
 <br></br>
 
 本项目的开源协议为：[GPL-3.0 License](/LICENSE)
+
+## 批量增加代码语言
+
+\s{5}\n\s{4}\n((^\s{4}.*\n)*)\n
+```vue\n$1```\n

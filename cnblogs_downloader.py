@@ -9,6 +9,10 @@ import httpx
 
 import lib.cnblogs_api as api
 
+from lxml import etree
+import html2text
+from distutils.util import strtobool
+
 
 class CnblogsDownloader:
     """
@@ -122,7 +126,16 @@ class CnblogsDownloader:
             essay = api.get_post_by_id(self._http_headers, str(essay_pre["id"]))
 
             essay_content = essay["blogPost"]["postBody"]
-            if self._download_img:
+            # 将html转换成Markdown
+            if not essay["blogPost"]["isMarkdown"]:
+                page = etree.HTML(essay_content)  #将HTML标签补全
+                content = page.xpath("//html")[0]
+                content = etree.tostring(content, encoding='utf-8').decode('utf-8')
+                h = html2text.HTML2Text() #将html转换成Markdown
+                content = h.handle(content)
+                essay_content=content
+
+            if strtobool(self._download_img):
                 essay_content = CnblogsDownloader._download_replace_img(filename, essay_content, write_absolute_path)
 
             with open(rf"{write_absolute_path}\{filename}", "w", encoding="utf-8") as f:
