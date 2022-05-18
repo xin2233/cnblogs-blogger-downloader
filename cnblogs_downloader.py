@@ -13,6 +13,14 @@ from lxml import etree
 import html2text
 from distutils.util import strtobool
 
+MD_HEAD = """
+---
+title:      {title}
+link:       [{link}]({link})
+date:       {date}
+category:   {category}
+---
+"""
 
 class CnblogsDownloader:
     """
@@ -123,23 +131,33 @@ class CnblogsDownloader:
                 print(rf"已是最新：{dirname}\{filename}")
                 self._lock.release()
                 continue
+
+            #准备头部
+            title = essay_pre["title"]
+            link_name = "https:" + essay_pre["url"]
+            pub_date = datetime.strptime(essay_pre["datePublished"], "%Y-%m-%dT%H:%M:%S")
+            md_head = MD_HEAD.format(title=title, link=link_name, date=pub_date, category=dirname)
+
             essay = api.get_post_by_id(self._http_headers, str(essay_pre["id"]))
 
             essay_content = essay["blogPost"]["postBody"]
             # 将html转换成Markdown
             if not essay["blogPost"]["isMarkdown"]:
-                page = etree.HTML(essay_content)  #将HTML标签补全
+                page = etree.HTML(essay_content)  # 将HTML标签补全
                 content = page.xpath("//html")[0]
                 content = etree.tostring(content, encoding='utf-8').decode('utf-8')
-                h = html2text.HTML2Text() #将html转换成Markdown
+                h = html2text.HTML2Text()  # 将html转换成Markdown
+                h.mark_code = True
+                h.body_width = 0
                 content = h.handle(content)
-                essay_content=content
+                content = content.replace('[code]', '```csharp').replace('[/code]', '```')
+                essay_content = content
 
             if strtobool(self._download_img):
                 essay_content = CnblogsDownloader._download_replace_img(filename, essay_content, write_absolute_path)
 
             with open(rf"{write_absolute_path}\{filename}", "w", encoding="utf-8") as f:
-                f.write(essay_content)
+                f.write(md_head.strip("\n")+"\n"+essay_content)
             self._lock.acquire()
             self._updated_essay = self._updated_essay + 1
             print(rf"已下载随笔：{dirname}\{filename}")
@@ -160,17 +178,17 @@ class CnblogsDownloader:
         # bug：写成lambda表达式用or连接两句时，只会执行最后一个表达式，猜测是因为前面的语句没有返回值
         def replace(m):
             img_url.append(m.group(2) if m.group(2) else m.group(6))
-            return rf"{m.group(1)}./img/{m.group(3)}{m.group(4)}" if m.group(
-                3) else rf"{m.group(5)}./img/{m.group(7)}{m.group(8)}"
+            return rf"{m.group(1)}./{essay_title}.assets/{m.group(3)}{m.group(4)}" if m.group(
+                3) else rf"{m.group(5)}./{essay_title}.assets/{m.group(7)}{m.group(8)}"
 
         essay_content = CnblogsDownloader._IMG_PATTERN.sub(replace, essay_content)
         http_headers = {"Referer": "https://i.cnblogs.com/"}
-        if len(img_url) > 0 and (not os.path.isdir(rf"{workdir}\img")):
-            os.mkdir(rf"{workdir}\img")
+        if len(img_url) > 0 and (not os.path.isdir(rf"{workdir}\{essay_title}.assets")):
+            os.mkdir(rf"{workdir}\{essay_title}.assets")
         for url in img_url:
             # 不再校验文件名的合法性
             img_name = url.split("/")[-1]
-            img_path = rf"{workdir}/img/{img_name}"
+            img_path = rf"{workdir}/{essay_title}.assets/{img_name}"
             if os.path.isfile(img_path):
                 print(rf"图片已存在：{img_name}")
                 continue
