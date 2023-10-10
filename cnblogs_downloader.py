@@ -153,6 +153,7 @@ class CnblogsDownloader:
                 content = content.replace('[code]', '```csharp').replace('[/code]', '```')
                 essay_content = content
 
+            # 如果设置了下载离线图片，则对图片的路径进行替换
             if strtobool(self._download_img):
                 essay_content = CnblogsDownloader._download_replace_img(filename, essay_content, write_absolute_path)
 
@@ -177,10 +178,35 @@ class CnblogsDownloader:
 
         # bug：写成lambda表达式用or连接两句时，只会执行最后一个表达式，猜测是因为前面的语句没有返回值
         def replace(m):
+            """
+            m : match 对象
+            match方法是从头开始匹配的，从中间截取字符串，是无法匹配到的。这也是match方法的局限性。
+            match方法匹配不到结果时，返回的是None，匹配到结果时，返回的是match对象。
+            match方法匹配到结果时，使用match对象的group方法，获取匹配结果。
+            """
             img_url.append(m.group(2) if m.group(2) else m.group(6))
             return rf"{m.group(1)}./{essay_title}.assets/{m.group(3)}{m.group(4)}" if m.group(
                 3) else rf"{m.group(5)}./{essay_title}.assets/{m.group(7)}{m.group(8)}"
 
+        '''
+        Python 的 re 模块提供了re.sub用于替换字符串中的匹配项。
+        语法：
+
+        re.sub(pattern, repl, string, count=0, flags=0)
+        参数：
+
+        pattern : 正则中的模式字符串。
+        repl : 替换的字符串，也可为一个函数。
+        string : 要被查找替换的原始字符串。
+        count : 模式匹配后替换的最大次数，默认 0 表示替换所有的匹配。
+
+        在这里，我们定义了一个名为replace_func的函数，它接受一个叫做match的参数，
+        该参数表示的是当前匹配的MatchObject对象。replace_func函数内部首先使用group(0)方法获取到匹配到的完整单词，
+        然后调用upper()方法将其转换成大写字母。最后将转换后的结果作为替换文本返回即可。
+
+        如果需要反复使用同一正则表达式进行替换，可以考虑使用re.compile()函数预编译正则表达式，以提高程序运行效率。
+        经过预编译后的正则表达式可以通过sub()方法的参数调用。
+        '''
         essay_content = CnblogsDownloader._IMG_PATTERN.sub(replace, essay_content)
         http_headers = {"Referer": "https://i.cnblogs.com/"}
         if len(img_url) > 0 and (not os.path.isdir(rf"{workdir}\{essay_title}.assets")):
