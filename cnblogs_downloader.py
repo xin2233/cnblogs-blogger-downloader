@@ -15,11 +15,15 @@ from distutils.util import strtobool
 
 MD_HEAD = """
 ---
-title:      {title}
-link:       [{link}]({link})
+layout:     post
+title:      "{title}"
 date:       {date}
-category:   {category}
+tag:        {category}
+description: ""
 ---
+
+link:       [{link}]({link})
+
 """
 
 class CnblogsDownloader:
@@ -184,7 +188,11 @@ class CnblogsDownloader:
             match方法匹配不到结果时，返回的是None，匹配到结果时，返回的是match对象。
             match方法匹配到结果时，使用match对象的group方法，获取匹配结果。
             """
+            jekyll_img_path = f"{essay_title}.assets"
+
             img_url.append(m.group(2) if m.group(2) else m.group(6))
+
+            # group(1) 是分类
             return rf"{m.group(1)}./{essay_title}.assets/{m.group(3)}{m.group(4)}" if m.group(
                 3) else rf"{m.group(5)}./{essay_title}.assets/{m.group(7)}{m.group(8)}"
 
